@@ -97,6 +97,8 @@ create table PETCLINIC_VISIT (
     DELETED_BY varchar(50),
     --
     VISIT_DATE date not null,
+    STATUS varchar(255),
+    RECOMMENDATIONS longvarchar,
     DESCRIPTION varchar(4000),
     PET_ID varchar(36) not null,
     --
