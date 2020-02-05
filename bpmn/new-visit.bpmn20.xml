@@ -18,7 +18,7 @@
       </lane>
       <lane id="Lane_0gvfg4v" name="Chief Vet">
         <extensionElements>
-          <bproc:assignmentDetails assigneeSource="userProvider" candidateUsersSource="users" candidateGroupsSource="userGroups" />
+          <bproc:assignmentDetails assigneeSource="userProvider" assigneeValue="petclinic_ChiefVetUserProvider" assignee="${petclinic_ChiefVetUserProvider.getForProcess(execution.id)}" candidateUsersSource="users" candidateGroupsSource="userGroups" />
         </extensionElements>
         <flowNodeRef>Task_000aybe</flowNodeRef>
       </lane>
@@ -32,7 +32,7 @@
         <flowNodeRef>Task_0q2ytgn</flowNodeRef>
         <flowNodeRef>EndEvent_06i0xm5</flowNodeRef>
         <flowNodeRef>EndEvent_0occ40z</flowNodeRef>
-        <flowNodeRef>BoundaryEvent_1puwnzb</flowNodeRef>
+        <flowNodeRef>BoundaryEvent_1joeiz5</flowNodeRef>
       </lane>
     </laneSet>
     <startEvent id="startEvent1">
@@ -98,7 +98,7 @@
               <bproc:formFieldProperty name="entityName" value="petclinic_Visit" />
             </bproc:formField>
             <bproc:formField id="ownersComment" caption="Owners comment" type="multilineString" editable="false" required="false" />
-            <bproc:formField id="vet" caption="Vet" type="user" editable="true" required="false">
+            <bproc:formField id="vet" caption="Vet" type="user" editable="true" required="true">
               <bproc:formFieldProperty name="uiComponent" value="lookupField" />
               <bproc:formFieldProperty name="query" value="select u from sec$User u join u.userRoles ur where ur.role.name=&#39;Vet&#39;" />
             </bproc:formField>
@@ -114,7 +114,13 @@
       </extensionElements>
       <conditionExpression xsi:type="tFormalExpression">${execution.getVariable('Task_1gen01t_result') != null &amp;&amp; bproc_UserTaskResults.containsOutcome(execution.getVariable('Task_1gen01t_result'), 'cancel')}</conditionExpression>
     </sequenceFlow>
-    <serviceTask id="Task_1b352v2" name="Set the &#34;Canceled&#34; status" bproc:taskType="springBean">
+    <serviceTask id="Task_1b352v2" name="Set the &#34;Canceled&#34; status" flowable:expression="${petclinic_VisitStatusService.setStatus(visit, &#39;Canceled&#39;)}" bproc:taskType="springBean">
+      <extensionElements>
+        <bproc:springBean beanName="petclinic_VisitStatusService" methodName="setStatus">
+          <bproc:methodParam name="visit" type="com.haulmont.sample.petclinic.entity.visit.Visit" isVariable="true">visit</bproc:methodParam>
+          <bproc:methodParam name="status" type="java.lang.String" isVariable="false">Canceled</bproc:methodParam>
+        </bproc:springBean>
+      </extensionElements>
       <incoming>SequenceFlow_0ycpnxo</incoming>
       <outgoing>SequenceFlow_05llk0n</outgoing>
     </serviceTask>
@@ -129,11 +135,16 @@
     </sequenceFlow>
     <userTask id="Task_0k5na28" name="Visit">
       <extensionElements>
-        <bproc:formData type="cuba-screen" openMode="DIALOG" />
+        <bproc:formData type="cuba-screen" openMode="DIALOG" screenId="petclinic_VisitProcessForm">
+          <bproc:formOutcomes>
+            <bproc:formOutcome id="Completed" />
+            <bproc:formOutcome id="PatientDidNotCome" />
+          </bproc:formOutcomes>
+        </bproc:formData>
       </extensionElements>
       <incoming>SequenceFlow_0cs64eb</incoming>
       <outgoing>SequenceFlow_14u82dk</outgoing>
-      <outgoing>SequenceFlow_1mse8kj</outgoing>
+      <outgoing>SequenceFlow_0jb0xr6</outgoing>
     </userTask>
     <exclusiveGateway id="ExclusiveGateway_16kteet">
       <incoming>SequenceFlow_14u82dk</incoming>
@@ -143,22 +154,32 @@
     <sequenceFlow id="SequenceFlow_14u82dk" sourceRef="Task_0k5na28" targetRef="ExclusiveGateway_16kteet" />
     <sequenceFlow id="SequenceFlow_1u1ffj5" name="Patient did not come" sourceRef="ExclusiveGateway_16kteet" targetRef="Task_06i6x7j">
       <extensionElements>
-        <bproc:conditionDetails conditionSource="expression" />
+        <bproc:conditionDetails conditionSource="userTaskOutcome" conditionType="anyoneCompleted" userTaskId="Task_0k5na28" userTaskOutcome="PatientDidNotCome" />
       </extensionElements>
+      <conditionExpression xsi:type="tFormalExpression">${execution.getVariable('Task_0k5na28_result') != null &amp;&amp; bproc_UserTaskResults.containsOutcome(execution.getVariable('Task_0k5na28_result'), 'PatientDidNotCome')}</conditionExpression>
     </sequenceFlow>
-    <serviceTask id="Task_06i6x7j" name="Set the &#34;Patient did not come&#34; status" bproc:taskType="springBean">
+    <serviceTask id="Task_06i6x7j" name="Set the &#34;Patient did not come&#34; status" flowable:expression="${petclinic_VisitStatusService.setStatus(visit, &#39;PatientDidNotCome&#39;)}" bproc:taskType="springBean">
+      <extensionElements>
+        <bproc:springBean beanName="petclinic_VisitStatusService" methodName="setStatus">
+          <bproc:methodParam name="visit" type="com.haulmont.sample.petclinic.entity.visit.Visit" isVariable="true">visit</bproc:methodParam>
+          <bproc:methodParam name="status" type="java.lang.String" isVariable="false">PatientDidNotCome</bproc:methodParam>
+        </bproc:springBean>
+      </extensionElements>
       <incoming>SequenceFlow_1u1ffj5</incoming>
-      <incoming>SequenceFlow_1mse8kj</incoming>
+      <incoming>SequenceFlow_0jb0xr6</incoming>
       <outgoing>SequenceFlow_09jw1yu</outgoing>
     </serviceTask>
     <sequenceFlow id="SequenceFlow_1iuiwbm" name="Completed" sourceRef="ExclusiveGateway_16kteet" targetRef="Task_0q2ytgn">
       <extensionElements>
-        <bproc:conditionDetails conditionSource="expression" />
+        <bproc:conditionDetails conditionSource="userTaskOutcome" conditionType="anyoneCompleted" userTaskId="Task_0k5na28" userTaskOutcome="Completed" />
       </extensionElements>
+      <conditionExpression xsi:type="tFormalExpression">${execution.getVariable('Task_0k5na28_result') != null &amp;&amp; bproc_UserTaskResults.containsOutcome(execution.getVariable('Task_0k5na28_result'), 'Completed')}</conditionExpression>
     </sequenceFlow>
-    <serviceTask id="Task_0q2ytgn" name="Save recommendations and send email to the owner" bproc:taskType="javaDelegateClass">
+    <serviceTask id="Task_0q2ytgn" name="Save recommendations and send email to the owner" flowable:class="com.haulmont.sample.petclinic.delegate.CompleteVisitJavaDelegate" bproc:taskType="javaDelegateClass">
       <extensionElements>
-        <flowable:field name="emaiTemplateName" />
+        <flowable:field name="emailTemplateName">
+          <flowable:string>vets-recommendations</flowable:string>
+        </flowable:field>
       </extensionElements>
       <incoming>SequenceFlow_1iuiwbm</incoming>
       <outgoing>SequenceFlow_012ym2m</outgoing>
@@ -171,16 +192,16 @@
     <endEvent id="EndEvent_0occ40z">
       <incoming>SequenceFlow_09jw1yu</incoming>
     </endEvent>
-    <boundaryEvent id="BoundaryEvent_1puwnzb" attachedToRef="Task_0k5na28">
-      <timerEventDefinition>
-        <timeDate xsi:type="tFormalExpression">${overdueVisitDate}</timeDate>
-      </timerEventDefinition>
-    </boundaryEvent>
-    <sequenceFlow id="SequenceFlow_1mse8kj" name="Automatically cancell the visit" sourceRef="Task_0k5na28" targetRef="Task_06i6x7j">
+    <sequenceFlow id="SequenceFlow_0jb0xr6" name="Automatically cancel the visit" sourceRef="Task_0k5na28" targetRef="Task_06i6x7j">
       <extensionElements>
         <bproc:conditionDetails conditionSource="expression" />
       </extensionElements>
     </sequenceFlow>
+    <boundaryEvent id="BoundaryEvent_1joeiz5" attachedToRef="Task_0k5na28">
+      <timerEventDefinition>
+        <timeDate xsi:type="tFormalExpression">${overdueVisitDate}</timeDate>
+      </timerEventDefinition>
+    </boundaryEvent>
   </process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_process">
     <bpmndi:BPMNPlane id="BPMNPlane_process" bpmnElement="Collaboration_0rnypvm">
@@ -265,7 +286,7 @@
         <omgdi:waypoint x="612" y="425" />
         <omgdi:waypoint x="612" y="532" />
         <bpmndi:BPMNLabel>
-          <omgdc:Bounds x="619" y="479" width="72" height="27" />
+          <omgdc:Bounds x="621" y="479" width="68" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="ServiceTask_0hxglc2_di" bpmnElement="Task_06i6x7j">
@@ -275,7 +296,7 @@
         <omgdi:waypoint x="637" y="400" />
         <omgdi:waypoint x="708" y="400" />
         <bpmndi:BPMNLabel>
-          <omgdc:Bounds x="646" y="382" width="54" height="14" />
+          <omgdc:Bounds x="648" y="382" width="51" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="ServiceTask_00ut3f4_di" bpmnElement="Task_0q2ytgn">
@@ -295,17 +316,17 @@
         <omgdi:waypoint x="662" y="572" />
         <omgdi:waypoint x="854" y="572" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="BoundaryEvent_0nw8gqg_di" bpmnElement="BoundaryEvent_1puwnzb">
-        <omgdc:Bounds x="470" y="422" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="SequenceFlow_1mse8kj_di" bpmnElement="SequenceFlow_1mse8kj">
+      <bpmndi:BPMNEdge id="SequenceFlow_0jb0xr6_di" bpmnElement="SequenceFlow_0jb0xr6">
         <omgdi:waypoint x="487" y="440" />
         <omgdi:waypoint x="487" y="572" />
         <omgdi:waypoint x="562" y="572" />
         <bpmndi:BPMNLabel>
-          <omgdc:Bounds x="401" y="502" width="76" height="27" />
+          <omgdc:Bounds x="402" y="539" width="73" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BoundaryEvent_1w8cyx1_di" bpmnElement="BoundaryEvent_1joeiz5">
+        <omgdc:Bounds x="468" y="422" width="36" height="36" />
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </definitions>
