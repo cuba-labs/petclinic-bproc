@@ -10,7 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CompleteVisitJavaDelegate implements JavaDelegate {
+
     private Expression emailTemplateName;
+
+    private static final String VISIT_STATUS = "Completed";
 
     private static final Logger log = LoggerFactory.getLogger(CompleteVisitJavaDelegate.class);
 
@@ -22,7 +25,7 @@ public class CompleteVisitJavaDelegate implements JavaDelegate {
         DataManager dataManager = AppBeans.get(DataManager.class);
         visit = dataManager.reload(visit, "visit-full");
         visit.setRecommendations(recommendations);
-        visit.setStatus("Completed");
+        visit.setStatus(VISIT_STATUS);
         dataManager.commit(visit);
 
         String ownersEmail = visit.getPet().getOwner().getEmail();
